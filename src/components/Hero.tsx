@@ -27,15 +27,12 @@ const Hero = () => {
             Nossa plataforma de IA oferece soluções inteligentes que transformam dados em insights valiosos para crescer seu negócio.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <div className="flex justify-center mb-12">
             <a href="#ai-chat">
               <Button size="lg" className="bg-ai-purple hover:bg-ai-purple-dark text-white">
                 Começar Agora
               </Button>
             </a>
-            <Button size="lg" variant="outline">
-              Ver Demonstração
-            </Button>
           </div>
         </div>
       </div>
