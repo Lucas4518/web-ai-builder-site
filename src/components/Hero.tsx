@@ -30,7 +30,7 @@ const Hero = () => {
           <div className="flex justify-center mb-12">
             <a href="#ai-chat">
               <Button size="lg" className="bg-ai-purple hover:bg-ai-purple-dark text-white">
-                Começar Agora
+                Experimente
               </Button>
             </a>
           </div>
