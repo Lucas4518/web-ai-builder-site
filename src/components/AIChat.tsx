@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const AIChat = () => {
-  const DEFAULT_API_KEY = ""; // Empty by default for security
+  const DEFAULT_API_KEY = "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"; 
   
   const [message, setMessage] = useState('');
   const [conversation, setConversation] = useState<{ role: 'user' | 'ai', content: string }[]>([
