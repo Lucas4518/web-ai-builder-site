@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const AIChat = () => {
-  const DEFAULT_API_KEY = "Gja7c7FxlbGoWAgaBzDC2ywFeXP815cScKp0gEES";
+  const DEFAULT_API_KEY = ""; // Empty by default for security
   
   const [message, setMessage] = useState('');
   const [conversation, setConversation] = useState<{ role: 'user' | 'ai', content: string }[]>([
@@ -17,14 +18,6 @@ const AIChat = () => {
     return savedKey || DEFAULT_API_KEY;
   });
   const [showApiInput, setShowApiInput] = useState(!localStorage.getItem('ai-api-key'));
-
-  // API key já está configurada quando a página carrega
-  React.useEffect(() => {
-    if (!localStorage.getItem('ai-api-key') && DEFAULT_API_KEY) {
-      localStorage.setItem('ai-api-key', DEFAULT_API_KEY);
-      setShowApiInput(false);
-    }
-  }, []);
 
   const saveApiKey = () => {
     if (apiKey.trim()) {
@@ -38,7 +31,7 @@ const AIChat = () => {
 
   const clearApiKey = () => {
     localStorage.removeItem('ai-api-key');
-    setApiKey(DEFAULT_API_KEY);
+    setApiKey('');
     setShowApiInput(true);
     toast.info("API Key removida");
   };
@@ -64,7 +57,7 @@ const AIChat = () => {
     setLoading(true);
     
     try {
-      // Estrutura básica para comunicação com APIs de IA (adaptável)
+      // Configuração correta para chat completions API
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -72,7 +65,7 @@ const AIChat = () => {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: "gpt-4o-mini", // Modelo moderno mais acessível
           messages: [
             { role: "system", content: "Você é um assistente útil e amigável." },
             ...conversation.map(msg => ({ 
@@ -81,12 +74,13 @@ const AIChat = () => {
             })),
             { role: "user", content: message }
           ],
-          max_tokens: 150
+          max_tokens: 300
         })
       });
       
       if (!response.ok) {
-        throw new Error(`Erro na API: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(`Erro na API: ${response.status} - ${errorData.error?.message || 'Erro desconhecido'}`);
       }
       
       const data = await response.json();
@@ -100,7 +94,7 @@ const AIChat = () => {
         content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Verifique sua API Key ou tente novamente mais tarde.' 
       }]);
       
-      toast.error("Erro ao comunicar com a API. Verifique sua chave ou conexão.");
+      toast.error(`Erro ao comunicar com a API: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
@@ -141,35 +135,37 @@ const AIChat = () => {
         
         <div className="max-w-3xl mx-auto bg-card border rounded-xl shadow-lg p-4">
           <div className="flex flex-col h-[400px]">
-            <div className="flex-1 overflow-y-auto mb-4 p-4 space-y-4">
-              {conversation.map((msg, index) => (
-                <div 
-                  key={index}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      msg.role === 'user' 
-                        ? 'bg-ai-purple text-white rounded-br-none' 
-                        : 'bg-muted rounded-bl-none'
-                    }`}
+            <ScrollArea className="flex-1 mb-4 p-4">
+              <div className="space-y-4">
+                {conversation.map((msg, index) => (
+                  <div 
+                    key={index}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg rounded-bl-none px-4 py-2 max-w-[80%]">
-                    <div className="flex space-x-1">
-                      <div className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                      <div className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    <div
+                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        msg.role === 'user' 
+                          ? 'bg-ai-purple text-white rounded-br-none' 
+                          : 'bg-muted rounded-bl-none'
+                      }`}
+                    >
+                      {msg.content}
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                ))}
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg rounded-bl-none px-4 py-2 max-w-[80%]">
+                      <div className="flex space-x-1">
+                        <div className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                        <div className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="h-2 w-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
             
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <Input
@@ -202,7 +198,7 @@ const AIChat = () => {
           </div>
           
           <div className="mt-4 text-xs text-muted-foreground text-center">
-            <p>O chat usa sua própria chave de API para comunicação com a IA.</p>
+            <p>O chat usa sua própria chave de API para comunicação com a IA. <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer" className="underline">Obtenha uma aqui</a>.</p>
           </div>
         </div>
       </div>
