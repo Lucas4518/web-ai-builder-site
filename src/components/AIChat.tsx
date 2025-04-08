@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 const AIChat = () => {
+  const DEFAULT_API_KEY = "Gja7c7FxlbGoWAgaBzDC2ywFeXP815cScKp0gEES";
+  
   const [message, setMessage] = useState('');
   const [conversation, setConversation] = useState<{ role: 'user' | 'ai', content: string }[]>([
     { role: 'ai', content: 'Olá! Como posso ajudar você hoje?' }
@@ -12,9 +14,17 @@ const AIChat = () => {
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState(() => {
     const savedKey = localStorage.getItem('ai-api-key');
-    return savedKey || '';
+    return savedKey || DEFAULT_API_KEY;
   });
   const [showApiInput, setShowApiInput] = useState(!localStorage.getItem('ai-api-key'));
+
+  // API key já está configurada quando a página carrega
+  React.useEffect(() => {
+    if (!localStorage.getItem('ai-api-key') && DEFAULT_API_KEY) {
+      localStorage.setItem('ai-api-key', DEFAULT_API_KEY);
+      setShowApiInput(false);
+    }
+  }, []);
 
   const saveApiKey = () => {
     if (apiKey.trim()) {
@@ -28,7 +38,7 @@ const AIChat = () => {
 
   const clearApiKey = () => {
     localStorage.removeItem('ai-api-key');
-    setApiKey('');
+    setApiKey(DEFAULT_API_KEY);
     setShowApiInput(true);
     toast.info("API Key removida");
   };
