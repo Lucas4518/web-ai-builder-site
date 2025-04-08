@@ -10,10 +10,38 @@ const AIChat = () => {
     { role: 'ai', content: 'Olá! Como posso ajudar você hoje?' }
   ]);
   const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState(() => {
+    const savedKey = localStorage.getItem('ai-api-key');
+    return savedKey || '';
+  });
+  const [showApiInput, setShowApiInput] = useState(!localStorage.getItem('ai-api-key'));
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const saveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem('ai-api-key', apiKey.trim());
+      setShowApiInput(false);
+      toast.success("API Key salva com sucesso!");
+    } else {
+      toast.error("Por favor, insira uma API Key válida");
+    }
+  };
+
+  const clearApiKey = () => {
+    localStorage.removeItem('ai-api-key');
+    setApiKey('');
+    setShowApiInput(true);
+    toast.info("API Key removida");
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
+    
+    if (!apiKey) {
+      setShowApiInput(true);
+      toast.error("Por favor, configure sua API Key primeiro");
+      return;
+    }
 
     // Adicionar mensagem do usuário
     const userMessage = { role: 'user' as const, content: message };
@@ -22,23 +50,50 @@ const AIChat = () => {
     // Limpar campo de input
     setMessage('');
     
-    // Simular resposta da IA (para demonstração)
+    // Iniciar carregamento
     setLoading(true);
     
-    setTimeout(() => {
-      const responses = [
-        "Isso é uma ótima pergunta! Posso ajudar você com isso.",
-        "Entendi o que você precisa. Vamos resolver isso juntos.",
-        "De acordo com minha análise, existem várias abordagens possíveis para isso.",
-        "Interessante! Deixe-me processar essa informação e responder adequadamente.",
-        "Meus algoritmos indicam que a melhor solução para sua questão seria..."
-      ];
+    try {
+      // Estrutura básica para comunicação com APIs de IA (adaptável)
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "Você é um assistente útil e amigável." },
+            ...conversation.map(msg => ({ 
+              role: msg.role === 'user' ? 'user' : 'assistant', 
+              content: msg.content 
+            })),
+            { role: "user", content: message }
+          ],
+          max_tokens: 150
+        })
+      });
       
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      if (!response.ok) {
+        throw new Error(`Erro na API: ${response.status}`);
+      }
       
-      setConversation(prev => [...prev, { role: 'ai', content: randomResponse }]);
+      const data = await response.json();
+      const aiResponse = data.choices[0].message.content;
+      
+      setConversation(prev => [...prev, { role: 'ai', content: aiResponse }]);
+    } catch (error) {
+      console.error("Erro ao comunicar com a API:", error);
+      setConversation(prev => [...prev, { 
+        role: 'ai', 
+        content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Verifique sua API Key ou tente novamente mais tarde.' 
+      }]);
+      
+      toast.error("Erro ao comunicar com a API. Verifique sua chave ou conexão.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -52,6 +107,27 @@ const AIChat = () => {
             Experimente nossa inteligência artificial e faça suas perguntas. Nossa IA está pronta para ajudar você.
           </p>
         </div>
+        
+        {showApiInput && (
+          <div className="max-w-xl mx-auto mb-8 p-4 border rounded-lg bg-card/50">
+            <h3 className="text-lg font-medium mb-2">Configure sua API Key</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Para usar o chat com IA, insira sua chave de API abaixo. Ela será salva apenas no seu navegador.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                placeholder="Insira sua API Key"
+                className="flex-1"
+              />
+              <Button onClick={saveApiKey} className="bg-ai-purple hover:bg-ai-purple-dark">
+                Salvar
+              </Button>
+            </div>
+          </div>
+        )}
         
         <div className="max-w-3xl mx-auto bg-card border rounded-xl shadow-lg p-4">
           <div className="flex flex-col h-[400px]">
@@ -91,21 +167,32 @@ const AIChat = () => {
                 placeholder="Digite sua mensagem..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                disabled={loading}
+                disabled={loading || showApiInput}
                 className="flex-1"
               />
               <Button 
                 type="submit" 
                 className="bg-ai-purple hover:bg-ai-purple-dark"
-                disabled={loading}
+                disabled={loading || showApiInput}
               >
                 {loading ? 'Enviando...' : 'Enviar'}
               </Button>
             </form>
+            
+            {!showApiInput && (
+              <div className="mt-3 text-right">
+                <button 
+                  onClick={clearApiKey}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Alterar API Key
+                </button>
+              </div>
+            )}
           </div>
           
           <div className="mt-4 text-xs text-muted-foreground text-center">
-            <p>Nota: Esta é uma demonstração. Para uma IA funcional, será necessário conectar a um serviço de IA.</p>
+            <p>O chat usa sua própria chave de API para comunicação com a IA.</p>
           </div>
         </div>
       </div>
