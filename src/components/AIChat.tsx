@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +64,7 @@ const AIChat = () => {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4",  // ou "gpt-3.5-turbo" dependendo do seu acesso
+          model: "gpt-3.5-turbo",  // Usando gpt-3.5-turbo
           messages: [
             { role: "system", content: "Você é um assistente útil e amigável." },
             ...conversation.map(msg => ({
