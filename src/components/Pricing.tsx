@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Check } from 'lucide-react';
@@ -15,7 +14,7 @@ const plans = [
       "Suporte por e-mail",
       "Dados básicos & Analytics",
     ],
-    buttonText: "Começar Grátis",
+    buttonText: "Escolher Plano",
     variant: "outline" as const,
     popular: false
   },
