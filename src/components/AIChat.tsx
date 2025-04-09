@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,25 +56,24 @@ const AIChat = () => {
     setLoading(true);
     
     try {
-      // Configuração correta para chat completions API
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini", // Modelo moderno mais acessível
+          model: "gpt-4",  // ou "gpt-3.5-turbo" dependendo do seu acesso
           messages: [
             { role: "system", content: "Você é um assistente útil e amigável." },
-            ...conversation.map(msg => ({ 
-              role: msg.role === 'user' ? 'user' : 'assistant', 
-              content: msg.content 
+            ...conversation.map(msg => ({
+              role: msg.role === 'user' ? 'user' : 'assistant',
+              content: msg.content,
             })),
-            { role: "user", content: message }
+            { role: "user", content: message },
           ],
-          max_tokens: 300
-        })
+          max_tokens: 300,
+        }),
       });
       
       if (!response.ok) {
