@@ -43,8 +43,7 @@ const HowItWorks = () => {
         </div>
         
         <div className="relative">
-          {/* Connector Line */}
-          <div className="hidden lg:block absolute top-24 left-1/2 h-0.5 bg-gradient-strong w-3/4 -translate-x-1/2" />
+          {/* Connector Line removed */}
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
