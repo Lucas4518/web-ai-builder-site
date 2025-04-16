@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,74 +6,139 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
+import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
 import { toast } from "sonner";
 import UsersManagement from '@/components/UsersManagement';
+import { supabase } from '@/integrations/supabase/client';
+import ServicesManagement from '@/components/ServicesManagement';
 
-// Dados simulados para produtos
-const initialProducts = [
-  { id: 1, name: 'Análise de Dados Básica', price: 'R$ 1.500', category: 'Serviço' },
-  { id: 2, name: 'Consultoria de IA', price: 'R$ 3.000', category: 'Serviço' },
-  { id: 3, name: 'Licença de Software', price: 'R$ 500/mês', category: 'Produto' },
-  { id: 4, name: 'Treinamento Personalizado', price: 'R$ 2.000', category: 'Serviço' },
-];
-
-// Dados simulados para serviços
-const initialServices = [
-  { id: 1, name: 'Integração de Sistemas', duration: '2 semanas', complexity: 'Média' },
-  { id: 2, name: 'Implantação de IA', duration: '4 semanas', complexity: 'Alta' },
-  { id: 3, name: 'Suporte Técnico', duration: 'Contínuo', complexity: 'Baixa' },
-  { id: 4, name: 'Consultoria Estratégica', duration: 'Variável', complexity: 'Alta' },
-];
+// Product type definition
+interface Product {
+  id: number;
+  nome: string;
+  preco: number;
+  descricao: string;
+}
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = React.useState(initialProducts);
-  const [services, setServices] = React.useState(initialServices);
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = React.useState(false);
   
   // Estado para formulário de produto
-  const [newProduct, setNewProduct] = React.useState({ name: '', price: '', category: '' });
+  const [newProduct, setNewProduct] = React.useState({ nome: '', preco: '', descricao: '' });
   const [editingProduct, setEditingProduct] = React.useState<number | null>(null);
   
   // Estado para formulário de serviço
+  const [services, setServices] = React.useState([
+    { id: 1, name: 'Integração de Sistemas', duration: '2 semanas', complexity: 'Média' },
+    { id: 2, name: 'Implantação de IA', duration: '4 semanas', complexity: 'Alta' },
+    { id: 3, name: 'Suporte Técnico', duration: 'Contínuo', complexity: 'Baixa' },
+    { id: 4, name: 'Consultoria Estratégica', duration: 'Variável', complexity: 'Alta' },
+  ]);
   const [newService, setNewService] = React.useState({ name: '', duration: '', complexity: '' });
   const [editingService, setEditingService] = React.useState<number | null>(null);
 
-  // Funções para gerenciar produtos
-  const addProduct = () => {
-    if (newProduct.name && newProduct.price && newProduct.category) {
-      if (editingProduct !== null) {
-        // Atualizar produto existente
-        setProducts(products.map(product => 
-          product.id === editingProduct 
-          ? { ...product, name: newProduct.name, price: newProduct.price, category: newProduct.category }
-          : product
-        ));
-        toast.success("Produto atualizado com sucesso!");
-        setEditingProduct(null);
-      } else {
-        // Adicionar novo produto
-        const id = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-        setProducts([...products, { id, ...newProduct }]);
-        toast.success("Produto adicionado com sucesso!");
+  // Fetch products from Supabase
+  const fetchProducts = async () => {
+    setLoadingProducts(true);
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .order('id', { ascending: false });
+      
+      if (error) {
+        throw error;
       }
-      setNewProduct({ name: '', price: '', category: '' });
-    } else {
-      toast.error("Por favor, preencha todos os campos.");
+      
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error(`Erro ao carregar produtos: ${(error as any).message}`);
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
+  // Load products on component mount
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Add or update product
+  const addProduct = async () => {
+    if (newProduct.nome && newProduct.preco) {
+      try {
+        if (editingProduct !== null) {
+          // Update existing product
+          const { error } = await supabase
+            .from('produtos')
+            .update({ 
+              nome: newProduct.nome, 
+              preco: parseFloat(newProduct.preco),
+              descricao: newProduct.descricao 
+            })
+            .eq('id', editingProduct);
+          
+          if (error) throw error;
+          toast.success("Produto atualizado com sucesso!");
+          setEditingProduct(null);
+        } else {
+          // Add new product
+          const { error } = await supabase
+            .from('produtos')
+            .insert({ 
+              nome: newProduct.nome, 
+              preco: parseFloat(newProduct.preco),
+              descricao: newProduct.descricao 
+            });
+          
+          if (error) throw error;
+          toast.success("Produto adicionado com sucesso!");
+        }
+        
+        // Reset form and reload products
+        setNewProduct({ nome: '', preco: '', descricao: '' });
+        fetchProducts();
+      } catch (error) {
+        console.error('Error handling product:', error);
+        toast.error(`Erro ao processar produto: ${(error as any).message}`);
+      }
+    } else {
+      toast.error("Por favor, preencha os campos nome e preço.");
+    }
+  };
+
+  // Edit product
   const editProduct = (id: number) => {
     const product = products.find(p => p.id === id);
     if (product) {
-      setNewProduct({ name: product.name, price: product.price, category: product.category });
+      setNewProduct({ 
+        nome: product.nome, 
+        preco: product.preco.toString(), 
+        descricao: product.descricao || '' 
+      });
       setEditingProduct(id);
     }
   };
 
-  const deleteProduct = (id: number) => {
-    setProducts(products.filter(product => product.id !== id));
-    toast.success("Produto removido com sucesso!");
+  // Delete product
+  const deleteProduct = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('produtos')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success("Produto removido com sucesso!");
+      fetchProducts();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error(`Erro ao remover produto: ${(error as any).message}`);
+    }
   };
 
   // Funções para gerenciar serviços
@@ -141,8 +206,8 @@ const Admin = () => {
                   <Label htmlFor="product-name">Nome do Produto</Label>
                   <Input 
                     id="product-name" 
-                    value={newProduct.name} 
-                    onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                    value={newProduct.nome} 
+                    onChange={(e) => setNewProduct({...newProduct, nome: e.target.value})}
                     placeholder="Nome do produto"
                   />
                 </div>
@@ -150,18 +215,21 @@ const Admin = () => {
                   <Label htmlFor="product-price">Preço</Label>
                   <Input 
                     id="product-price" 
-                    value={newProduct.price} 
-                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
-                    placeholder="Ex: R$ 1.500"
+                    value={newProduct.preco} 
+                    onChange={(e) => setNewProduct({...newProduct, preco: e.target.value})}
+                    placeholder="Ex: 1500.00"
+                    type="number"
+                    step="0.01"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="product-category">Categoria</Label>
-                  <Input 
-                    id="product-category" 
-                    value={newProduct.category} 
-                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                    placeholder="Categoria"
+                <div className="md:col-span-3">
+                  <Label htmlFor="product-description">Descrição</Label>
+                  <Textarea 
+                    id="product-description" 
+                    value={newProduct.descricao} 
+                    onChange={(e) => setNewProduct({...newProduct, descricao: e.target.value})}
+                    placeholder="Descrição do produto"
+                    className="h-24"
                   />
                 </div>
               </div>
@@ -176,21 +244,30 @@ const Admin = () => {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Preço</TableHead>
-                    <TableHead>Categoria</TableHead>
+                    <TableHead>Descrição</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.length === 0 ? (
+                  {loadingProducts ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <div className="flex justify-center items-center">
+                          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                          <span>Carregando produtos...</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : products.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center">Nenhum produto cadastrado</TableCell>
                     </TableRow>
                   ) : (
                     products.map((product) => (
                       <TableRow key={product.id}>
-                        <TableCell>{product.name}</TableCell>
-                        <TableCell>{product.price}</TableCell>
-                        <TableCell>{product.category}</TableCell>
+                        <TableCell>{product.nome}</TableCell>
+                        <TableCell>R$ {product.preco.toFixed(2)}</TableCell>
+                        <TableCell className="truncate max-w-xs">{product.descricao}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="icon" onClick={() => editProduct(product.id)}>
@@ -213,88 +290,7 @@ const Admin = () => {
         </TabsContent>
 
         <TabsContent value="services">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciar Serviços</CardTitle>
-              <CardDescription>
-                Adicione, edite ou remova serviços do sistema.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="service-name">Nome do Serviço</Label>
-                  <Input 
-                    id="service-name" 
-                    value={newService.name} 
-                    onChange={(e) => setNewService({...newService, name: e.target.value})}
-                    placeholder="Nome do serviço"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="service-duration">Duração</Label>
-                  <Input 
-                    id="service-duration" 
-                    value={newService.duration} 
-                    onChange={(e) => setNewService({...newService, duration: e.target.value})}
-                    placeholder="Ex: 2 semanas"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="service-complexity">Complexidade</Label>
-                  <Input 
-                    id="service-complexity" 
-                    value={newService.complexity} 
-                    onChange={(e) => setNewService({...newService, complexity: e.target.value})}
-                    placeholder="Baixa, Média, Alta"
-                  />
-                </div>
-              </div>
-              
-              <Button onClick={addService} className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" />
-                {editingService !== null ? 'Atualizar Serviço' : 'Adicionar Serviço'}
-              </Button>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Duração</TableHead>
-                    <TableHead>Complexidade</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {services.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center">Nenhum serviço cadastrado</TableCell>
-                    </TableRow>
-                  ) : (
-                    services.map((service) => (
-                      <TableRow key={service.id}>
-                        <TableCell>{service.name}</TableCell>
-                        <TableCell>{service.duration}</TableCell>
-                        <TableCell>{service.complexity}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => editService(service.id)}>
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Editar</span>
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => deleteService(service.id)}>
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Excluir</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <ServicesManagement />
         </TabsContent>
 
         <TabsContent value="users">

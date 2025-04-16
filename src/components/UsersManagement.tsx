@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +52,7 @@ const UsersManagement = () => {
           disabled={loading}
           className="flex items-center gap-2"
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           Buscar Usuários
         </Button>
         
