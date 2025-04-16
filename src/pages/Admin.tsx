@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { toast } from "sonner";
+import UsersManagement from '@/components/UsersManagement';
 
 // Dados simulados para produtos
 const initialProducts = [
@@ -121,9 +121,10 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="products" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="products">Produtos</TabsTrigger>
           <TabsTrigger value="services">Serviços</TabsTrigger>
+          <TabsTrigger value="users">Usuários (Supabase)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">
@@ -294,6 +295,10 @@ const Admin = () => {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <UsersManagement />
         </TabsContent>
       </Tabs>
     </div>
