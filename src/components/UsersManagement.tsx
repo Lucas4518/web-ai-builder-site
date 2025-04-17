@@ -5,38 +5,46 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCcw } from 'lucide-react';
 
-interface User {
+// Interface atualizada conforme as colunas da tabela usuários no Supabase
+interface Usuario {
   id: number;
   created_at: string;
-  [key: string]: any; // For any other fields in the users table
+  Pedro: string | null; // Campo conforme visualizado no seu esquema de banco de dados
+  [key: string]: any; // Para outros campos que possam existir
 }
 
 const UsersManagement = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsuarios = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('usuários') // Using the correct table name with accent
+        .from('usuários') // Nome correto da tabela com acento
         .select('*');
       
       if (error) {
         throw error;
       }
       
-      setUsers(data || []);
+      setUsuarios(data || []);
       toast.success('Usuários carregados com sucesso!');
+      console.log('Dados carregados:', data); // Log para debug
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Erro ao carregar usuários:', error);
       toast.error(`Erro ao carregar usuários: ${(error as any).message}`);
     } finally {
       setLoading(false);
     }
   };
+
+  // Carregar dados automaticamente quando o componente montar
+  React.useEffect(() => {
+    fetchUsuarios();
+  }, []);
 
   return (
     <Card>
@@ -48,12 +56,12 @@ const UsersManagement = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <Button 
-          onClick={fetchUsers} 
+          onClick={fetchUsuarios} 
           disabled={loading}
           className="flex items-center gap-2"
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Buscar Usuários
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+          Atualizar Usuários
         </Button>
         
         <Table>
@@ -61,24 +69,26 @@ const UsersManagement = () => {
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Data de Criação</TableHead>
+              <TableHead>Nome</TableHead>
               <TableHead>Detalhes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.length === 0 ? (
+            {usuarios.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">
-                  {loading ? 'Carregando usuários...' : 'Nenhum usuário encontrado'}
+                <TableCell colSpan={4} className="text-center">
+                  {loading ? 'Carregando usuários...' : 'Nenhum usuário encontrado. Adicione usuários no Supabase.'}
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell>{new Date(user.created_at).toLocaleString('pt-BR')}</TableCell>
+              usuarios.map((usuario) => (
+                <TableRow key={usuario.id}>
+                  <TableCell>{usuario.id}</TableCell>
+                  <TableCell>{new Date(usuario.created_at).toLocaleString('pt-BR')}</TableCell>
+                  <TableCell>{usuario.Pedro || 'N/A'}</TableCell>
                   <TableCell>
                     <pre className="text-xs overflow-auto max-h-20 p-2 bg-gray-100 rounded">
-                      {JSON.stringify(user, null, 2)}
+                      {JSON.stringify(usuario, null, 2)}
                     </pre>
                   </TableCell>
                 </TableRow>
