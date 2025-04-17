@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Loader2 } from 'lucide-react';
 
 interface User {
-  id: string;
+  id: number;
   created_at: string;
   [key: string]: any; // For any other fields in the users table
 }
@@ -21,7 +21,7 @@ const UsersManagement = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('usuarios') // Using the table name from your example
+        .from('usuários') // Using the correct table name with accent
         .select('*');
       
       if (error) {
