@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import UsersManagement from '@/components/UsersManagement';
 import { supabase } from '@/integrations/supabase/client';
 import ServicesManagement from '@/components/ServicesManagement';
+import { useAdmin } from '@/hooks/useAdmin';
 
 // Product type definition
 interface Product {
@@ -39,6 +40,28 @@ const Admin = () => {
   ]);
   const [newService, setNewService] = React.useState({ name: '', duration: '', complexity: '' });
   const [editingService, setEditingService] = React.useState<number | null>(null);
+
+  const { isAdmin, loading } = useAdmin();
+
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      toast.error("Acesso não autorizado. Faça login como administrador.");
+      navigate('/auth');
+    }
+  }, [isAdmin, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Verificando permissões...</span>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   // Fetch products from Supabase
   const fetchProducts = async () => {
