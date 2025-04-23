@@ -5,10 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@admin.com");
+  const [password, setPassword] = useState("admin");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -73,6 +75,16 @@ const Auth = () => {
           <h1 className="text-3xl font-bold">Bem-vindo</h1>
           <p className="text-muted-foreground">Faça login ou crie sua conta</p>
         </div>
+
+        <Alert>
+          <InfoIcon className="h-4 w-4" />
+          <AlertDescription>
+            Para acessar o painel admin, use:<br />
+            Email: admin@admin.com<br />
+            Senha: admin
+          </AlertDescription>
+        </Alert>
+
         <form className="space-y-4">
           <div className="space-y-2">
             <Input
