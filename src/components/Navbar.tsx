@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { BrainIcon, Menu, X } from 'lucide-react';
+import AuthButton from './AuthButton';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -28,6 +28,7 @@ const Navbar = () => {
           <a href="#contato" className="text-sm font-medium hover:text-ai-purple transition-colors">
             Contato
           </a>
+          <AuthButton />
         </div>
         
         <div className="hidden md:flex items-center gap-4">
@@ -74,10 +75,7 @@ const Navbar = () => {
           >
             Contato
           </a>
-          <div className="flex flex-col gap-2 mt-2">
-            <Button variant="outline" size="sm">Entrar</Button>
-            <Button size="sm" className="bg-ai-purple hover:bg-ai-purple-dark">Começar Grátis</Button>
-          </div>
+          <AuthButton />
         </div>
       )}
     </nav>
