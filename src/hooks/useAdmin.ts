@@ -13,11 +13,12 @@ export const useAdmin = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
+          console.log("Nenhum usuário logado");
           setIsAdmin(false);
           return;
         }
 
-        console.log("Checking admin status for user:", user.id);
+        console.log("Verificando status de administrador para o usuário:", user.id);
 
         const { data, error } = await supabase
           .from('user_roles')
@@ -26,15 +27,15 @@ export const useAdmin = () => {
           .single();
 
         if (error) {
-          console.error('Error checking admin status:', error);
+          console.error('Erro ao verificar status de administrador:', error);
           setIsAdmin(false);
           return;
         }
         
-        console.log("User role data:", data);
+        console.log("Dados de função do usuário:", data);
         setIsAdmin(data?.role === 'admin');
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('Erro ao verificar status de administrador:', error);
         setIsAdmin(false);
       } finally {
         setLoading(false);

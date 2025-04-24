@@ -51,12 +51,19 @@ const Auth = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      console.log("Tentando login com:", { email, password });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro de autenticação:", error);
+        throw error;
+      }
+
+      console.log("Login bem-sucedido:", data);
 
       // Check if user is admin
       const { data: roleData, error: roleError } = await supabase
@@ -64,8 +71,11 @@ const Auth = () => {
         .select('role')
         .eq('user_id', data.user.id)
         .single();
+      
+      console.log("Dados de função do usuário:", roleData);
         
       if (roleError) {
+        console.error("Erro ao verificar função de usuário:", roleError);
         toast({
           title: "Acesso não autorizado",
           description: "Sua conta não tem permissões de administrador",
@@ -88,9 +98,10 @@ const Auth = () => {
         });
       }
     } catch (error: any) {
+      console.error("Erro completo:", error);
       toast({
         title: "Erro ao fazer login",
-        description: error.message,
+        description: error.message || "Credenciais inválidas",
         variant: "destructive",
       });
     } finally {
@@ -143,9 +154,9 @@ const Auth = () => {
           <p className="text-muted-foreground">Faça login ou crie sua conta</p>
         </div>
 
-        <Alert>
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <InfoIcon className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
             Para acessar o painel admin, use:<br />
             Email: admin@admin.com<br />
             Senha: admin

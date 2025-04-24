@@ -9,14 +9,16 @@ const AdminButton = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAdmin();
   
+  if (!isAdmin) return null;
+  
   return (
     <Button 
       variant="default"
-      size="sm" 
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 shadow-md bg-primary text-primary-foreground hover:bg-primary/90"
-      onClick={() => navigate('/auth')}
+      size="lg"
+      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 shadow-md bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse"
+      onClick={() => navigate('/admin')}
     >
-      <ShieldCheck className="h-4 w-4" />
+      <ShieldCheck className="h-5 w-5" />
       Painel Admin
     </Button>
   );
