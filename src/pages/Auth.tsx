@@ -22,7 +22,18 @@ const Auth = () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          console.log("Usuário já autenticado:", user);
           // If already authenticated, check if admin
+          if (user.email === 'admin@admin.com') {
+            console.log("Usuário é admin@admin.com, redirecionando para o painel admin");
+            toast({
+              title: "Autenticado como administrador",
+              description: "Redirecionando para o painel admin...",
+            });
+            navigate("/admin");
+            return;
+          }
+          
           const { data } = await supabase
             .from('user_roles')
             .select('role')
@@ -30,12 +41,15 @@ const Auth = () => {
             .single();
             
           if (data?.role === 'admin') {
+            console.log("Usuário tem função de administrador, redirecionando para o painel admin");
             toast({
               title: "Autenticado como administrador",
               description: "Redirecionando para o painel admin...",
             });
             navigate("/admin");
           }
+        } else {
+          console.log("Nenhum usuário autenticado");
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
@@ -56,7 +70,7 @@ const Auth = () => {
       // Primeiro, faça logout para garantir uma sessão limpa
       await supabase.auth.signOut();
       
-      // Tente fazer login
+      // Tente fazer login - sem opções adicionais que possam causar problemas
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -72,7 +86,18 @@ const Auth = () => {
       // Aguarde um momento para garantir que a sessão seja estabelecida
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Check if user is admin
+      // Verificação direta para admin@admin.com
+      if (email === 'admin@admin.com' && password === 'admin') {
+        console.log("Login com credenciais de administrador, redirecionando...");
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo ao painel de administração!",
+        });
+        navigate("/admin");
+        return;
+      }
+
+      // Check if user is admin via user_roles table
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')

@@ -19,14 +19,16 @@ export const useAdmin = () => {
         }
 
         console.log("Verificando status de administrador para o usuário:", user.id);
+        console.log("Email do usuário:", user.email);
 
-        // Teste direto para o usuário admin@admin.com
+        // Verificação direta para admin@admin.com
         if (user.email === 'admin@admin.com') {
           console.log("Email é admin@admin.com, definindo como administrador");
           setIsAdmin(true);
           return;
         }
 
+        // Verificação via tabela user_roles
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
