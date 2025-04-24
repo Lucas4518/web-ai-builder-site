@@ -11,9 +11,9 @@ const AdminButton = () => {
   
   return (
     <Button 
-      variant="outline"
+      variant="default"
       size="sm" 
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 shadow-md"
+      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 shadow-md bg-primary text-primary-foreground hover:bg-primary/90"
       onClick={() => navigate('/auth')}
     >
       <ShieldCheck className="h-4 w-4" />

@@ -1,36 +1,92 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Loader2 } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("admin@admin.com");
   const [password, setPassword] = useState("admin");
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // If already authenticated, check if admin
+          const { data } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .single();
+            
+          if (data?.role === 'admin') {
+            toast({
+              title: "Autenticado como administrador",
+              description: "Redirecionando para o painel admin...",
+            });
+            navigate("/admin");
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    
+    checkUser();
+  }, [navigate, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta!",
-      });
-      navigate("/");
+      // Check if user is admin
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .single();
+        
+      if (roleError) {
+        toast({
+          title: "Acesso não autorizado",
+          description: "Sua conta não tem permissões de administrador",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (roleData?.role === 'admin') {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo ao painel de administração!",
+        });
+        navigate("/admin");
+      } else {
+        toast({
+          title: "Acesso não autorizado",
+          description: "Sua conta não tem permissões de administrador",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao fazer login",
@@ -68,6 +124,17 @@ const Auth = () => {
     }
   };
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p>Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg">
@@ -85,7 +152,7 @@ const Auth = () => {
           </AlertDescription>
         </Alert>
 
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleLogin}>
           <div className="space-y-2">
             <Input
               type="email"
@@ -106,7 +173,7 @@ const Auth = () => {
           </div>
           <div className="flex flex-col space-y-2">
             <Button 
-              onClick={handleLogin} 
+              type="submit"
               disabled={loading}
               className="w-full"
             >
@@ -117,6 +184,7 @@ const Auth = () => {
               variant="outline" 
               disabled={loading}
               className="w-full"
+              type="button"
             >
               Criar conta
             </Button>
