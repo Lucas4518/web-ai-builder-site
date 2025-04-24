@@ -53,6 +53,10 @@ const Auth = () => {
       setLoading(true);
       console.log("Tentando login com:", { email, password });
       
+      // Primeiro, faça logout para garantir uma sessão limpa
+      await supabase.auth.signOut();
+      
+      // Tente fazer login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -64,6 +68,9 @@ const Auth = () => {
       }
 
       console.log("Login bem-sucedido:", data);
+
+      // Aguarde um momento para garantir que a sessão seja estabelecida
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Check if user is admin
       const { data: roleData, error: roleError } = await supabase
@@ -116,6 +123,11 @@ const Auth = () => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            role: 'user' // Definindo um papel padrão
+          }
+        }
       });
 
       if (error) throw error;
@@ -156,7 +168,7 @@ const Auth = () => {
 
         <Alert className="bg-yellow-50 border-yellow-200">
           <InfoIcon className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-800">
+          <AlertDescription className="text-yellow-800 font-medium">
             Para acessar o painel admin, use:<br />
             Email: admin@admin.com<br />
             Senha: admin
@@ -171,6 +183,7 @@ const Auth = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
+              className="bg-white"
             />
           </div>
           <div className="space-y-2">
@@ -180,15 +193,21 @@ const Auth = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
+              className="bg-white"
             />
           </div>
           <div className="flex flex-col space-y-2">
             <Button 
               type="submit"
               disabled={loading}
-              className="w-full"
+              className="w-full text-base py-5"
             >
-              {loading ? "Carregando..." : "Entrar"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Carregando...
+                </>
+              ) : "Entrar"}
             </Button>
             <Button 
               onClick={handleSignUp}
