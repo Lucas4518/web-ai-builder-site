@@ -33,7 +33,7 @@ export const useAdmin = () => {
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Erro ao verificar status de administrador:', error);

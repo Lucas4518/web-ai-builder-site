@@ -20,32 +20,28 @@ const Auth = () => {
   useEffect(() => {
     const checkUser = async () => {
       try {
+        setCheckingAuth(true);
         const { data: { user } } = await supabase.auth.getUser();
+        
         if (user) {
           console.log("Usuário já autenticado:", user);
-          // If already authenticated, check if admin
+          
+          // Direct check for admin@admin.com
           if (user.email === 'admin@admin.com') {
-            console.log("Usuário é admin@admin.com, redirecionando para o painel admin");
-            toast({
-              title: "Autenticado como administrador",
-              description: "Redirecionando para o painel admin...",
-            });
+            console.log("Admin por email detectado, redirecionando para /admin");
             navigate("/admin");
             return;
           }
           
+          // Check admin via user_roles table
           const { data } = await supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
             
           if (data?.role === 'admin') {
-            console.log("Usuário tem função de administrador, redirecionando para o painel admin");
-            toast({
-              title: "Autenticado como administrador",
-              description: "Redirecionando para o painel admin...",
-            });
+            console.log("Admin por role detectado, redirecionando para /admin");
             navigate("/admin");
           }
         } else {
@@ -59,7 +55,7 @@ const Auth = () => {
     };
     
     checkUser();
-  }, [navigate, toast]);
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,55 +63,73 @@ const Auth = () => {
       setLoading(true);
       console.log("Tentando login com:", { email, password });
       
-      // Primeiro, faça logout para garantir uma sessão limpa
-      await supabase.auth.signOut();
+      // For admin@admin.com, use a special flow
+      if (email === 'admin@admin.com' && password === 'admin') {
+        try {
+          // First try to sign up the admin user if it doesn't exist
+          const { error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+          
+          console.log("Resultado do signup do admin:", signUpError ? "Erro" : "Sucesso ou já existe");
+          
+          // Now try to sign in
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (error) throw error;
+          
+          console.log("Login de admin bem-sucedido:", data);
+          
+          // Insert admin role if needed
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: data.user.id,
+              role: 'admin'
+            })
+            .select()
+            .single();
+            
+          if (roleError && !roleError.message.includes('duplicate key')) {
+            console.error("Erro ao inserir role de admin:", roleError);
+          }
+          
+          toast({
+            title: "Login realizado com sucesso!",
+            description: "Bem-vindo ao painel de administração!",
+          });
+          
+          navigate("/admin");
+          return;
+        } catch (adminError: any) {
+          console.error("Erro no fluxo de admin:", adminError);
+          throw adminError;
+        }
+      }
       
-      // Tente fazer login - sem opções adicionais que possam causar problemas
+      // Regular user flow
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
-        console.error("Erro de autenticação:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       console.log("Login bem-sucedido:", data);
 
-      // Aguarde um momento para garantir que a sessão seja estabelecida
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Verificação direta para admin@admin.com
-      if (email === 'admin@admin.com' && password === 'admin') {
-        console.log("Login com credenciais de administrador, redirecionando...");
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo ao painel de administração!",
-        });
-        navigate("/admin");
-        return;
-      }
-
       // Check if user is admin via user_roles table
-      const { data: roleData, error: roleError } = await supabase
+      const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id)
-        .single();
+        .maybeSingle();
       
       console.log("Dados de função do usuário:", roleData);
         
-      if (roleError) {
-        console.error("Erro ao verificar função de usuário:", roleError);
-        toast({
-          title: "Acesso não autorizado",
-          description: "Sua conta não tem permissões de administrador",
-          variant: "destructive",
-        });
-        return;
-      }
-      
       if (roleData?.role === 'admin') {
         toast({
           title: "Login realizado com sucesso!",
@@ -148,11 +162,6 @@ const Auth = () => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            role: 'user' // Definindo um papel padrão
-          }
-        }
       });
 
       if (error) throw error;
